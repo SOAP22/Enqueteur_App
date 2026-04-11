@@ -1,7 +1,16 @@
 {
 "name": "enqueteur-beta",
+"private": true,
 "version": "1.0.0",
 "scripts": {
-"build": "echo build complete"
+"build": "vite build",
+"dev": "vite"
+},
+"dependencies": {
+"react": "^18.2.0",
+"react-dom": "^18.2.0"
+},
+"devDependencies": {
+"vite": "^5.0.0"
 }
 }
