@@ -895,13 +895,29 @@ export default function App() {
   const [paiements, setPaiements] = useState([]);
 
   // ── Chargement données utilisateur depuis localStorage ────────────
-  const loadUserData = useCallback((uid) => {
-    const seed = makeSeed();
-    setMissions(stoGet(uid, "missions",  seed.missions));
-    setDepenses(stoGet(uid, "depenses",  seed.depenses));
-    setPaiements(stoGet(uid, "paiements", seed.paiements));
-  }, []);
+  const loadUserData = useCallback(async (uid) => {
+const { data: missionsData, error: missionError } = await supabase
+.from("missions")
+.select("*")
+.eq("user_id", uid)
+.order("created_at", { ascending: false });
 
+const { data: depensesData, error: depenseError } = await supabase
+.from("depenses")
+.select("*")
+.eq("user_id", uid)
+.order("created_at", { ascending: false });
+
+const { data: paiementsData, error: paiementError } = await supabase
+.from("paiements")
+.select("*")
+.eq("user_id", uid)
+.order("created_at", { ascending: false });
+
+if (!missionError) setMissions(missionsData || []);
+if (!depenseError) setDepenses(depensesData || []);
+if (!paiementError) setPaiements(paiementsData || []);
+}, []);
   // ── Auth state listener + vérification session au démarrage ──────
   useEffect(() => {
     // 1. Vérifier session existante
@@ -929,6 +945,57 @@ export default function App() {
       }
     });
 
+	const [missions, setMissions] = useState([]);
+	const [depenses, setDepenses] = useState([]);
+	const [paiements, setPaiements] = useState([]);
+	const [user, setUser] = useState(null);
+
+	useEffect(() => {
+		checkSession();
+
+		const {
+			data: { subscription }
+} = supabase.auth.onAuthStateChange((_event, session) => {
+setUser(session?.user || null);
+
+if (session?.user) {
+  loadDashboardData(session.user.id);
+}
+
+});
+
+return () => subscription.unsubscribe();
+}, []);
+
+const checkSession = async () => {
+const { data } = await supabase.auth.getSession();
+
+if (data.session?.user) {
+setUser(data.session.user);
+loadDashboardData(data.session.user.id);
+}
+};
+
+const loadDashboardData = async (userId) => {
+const { data: missionsData } = await supabase
+.from("missions")
+.select("*")
+.eq("user_id", userId);
+
+const { data: depensesData } = await supabase
+.from("depenses")
+.select("*")
+.eq("user_id", userId);
+
+const { data: paiementsData } = await supabase
+.from("paiements")
+.select("*")
+.eq("user_id", userId);
+
+setMissions(missionsData || []);
+setDepenses(depensesData || []);
+setPaiements(paiementsData || []);
+};
     return () => subscription.unsubscribe();
   }, [loadUserData]);
 
